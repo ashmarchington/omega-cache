@@ -1,0 +1,35 @@
+[package]
+name = "omega-cache"
+version = "1.0.0"
+edition = "2024"
+description = "Basic dynamic cache lib"
+license = "unlicense"
+keywords = ["cache", "sled", "in-memory", "redis"]
+categories = ["caching"]
+readme = "./README.md"
+repository = "https://github.com/ashmarchington/omega-cache"
+
+[dependencies]
+bincode = { git = "https://github.com/bincode-org/bincode", tag = "v2.0.0-rc.3", features = ["derive"]}
+sled = { version = "0.34.7", features = ["compression"], optional = true }
+redis = { version = "0.29.5", features = ["r2d2"], optional = true }
+r2d2 = { version = "0.8.10", optional = true }
+
+[features]
+default = []
+sled = ["dep:sled"]
+redis = ["dep:redis", "dep:r2d2"]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+perf = "deny"
+suspicious = "deny"
+style = "deny"
+pedantic = "deny"
+cargo = "deny"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

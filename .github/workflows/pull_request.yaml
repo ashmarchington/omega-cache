@@ -1,0 +1,92 @@
+name: pull_request
+
+on:
+  pull_request:
+    branches:
+      - "**"
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-pull-request
+  cancel-in-progress: true
+
+jobs:
+  check-pr:
+    name: check pr housekeeping
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: conventional commit check
+        uses: ytanikin/pr-conventional-commits@1.4.0
+        with:
+          task_types: '["feat","fix","ci","perf","refactor","chore","docs","test","revert","release"]'
+          custom_labels: '{"feat": "feature", "fix": "fix", "docs": "documentation", "test": "test", "ci": "CI/CD", "refactor": "refactor", "perf": "performance", "chore": "chore", "revert": "revert", "release": "release"}'
+
+  test-and-ci:
+    name: test
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: write
+      pull-requests: write
+
+    services:
+      cache:
+        image: redis:6.2-alpine
+        ports:
+          - '6379:6379'
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: install rust
+        id: install
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          components: clippy, rustfmt
+
+      - name: compute lock hash
+        id: lock-hash
+        uses: seepine/hash-files@v1
+        with:
+          workdir: ${{ matrix.working-directory }}/graph
+          patterns: "**/Cargo.toml"
+
+      - name: cache dependencies
+        id: cache-dependencies
+        uses: actions/cache@v4
+        with:
+          key: ${{ matrix.working-directory }}-cargo-${{ steps.lock-hash.outputs.hash }}
+          path: |
+            ${{ matrix.working-directory }}/.cargo/bin
+            ${{ matrix.working-directory }}/.cargo/registry/
+            ${{ matrix.working-directory }}/.cargo/git/
+            ${{ matrix.working-directory }}/target/debug
+
+      - name: fmt
+        id: fmt
+        run: cargo fmt -p ${{ matrix.working-directory }} -- --check
+
+      - name: clippy
+        id: clippy
+        run: cargo clippy -- -D warnings
+
+      - name: test
+        id: test
+        run: cargo test --all-features
+

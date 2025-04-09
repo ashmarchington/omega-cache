@@ -1,0 +1,13 @@
+/target
+.env
+!.env.dist
+.idea
+rustc*
+tmp
+flamegraph.svg
+perf.data
+perf.data.*
+dump
+.gdb_history
+generated/csharp/bin
+generated/csharp/obj

@@ -16,6 +16,7 @@ struct Item<T: bincode::Encode> {
 ///
 /// Wrapper for ``sled::Db``
 ///
+#[derive(Debug)]
 pub struct SledEngine {
     inner: sled::Db,
 }
@@ -38,8 +39,8 @@ impl CacheStorage for SledEngine {
     fn try_insert(
         &self,
         c: &dyn ColumnDefinition,
-        key: Vec<u8>,
-        value: Vec<u8>,
+        key: &[u8],
+        value: &[u8],
     ) -> Result<(), crate::CacheError> {
         let t = std::time::Instant::now();
 
@@ -77,17 +78,15 @@ impl CacheStorage for SledEngine {
     fn try_get(
         &self,
         c: &dyn ColumnDefinition,
-        key: Vec<u8>,
+        key: &[u8],
     ) -> Result<Option<Vec<u8>>, crate::CacheError> {
         let t = std::time::Instant::now();
-
-        let key_bytes = key.as_slice();
 
         match self
             .inner
             .open_tree(c.name())
             .map_err(|e| CacheError::Engine(e.to_string()))?
-            .get(key_bytes)
+            .get(key)
         {
             Ok(Some(bytes)) => {
                 match bincode::decode_from_slice::<Item<Vec<u8>>, _>(
@@ -113,7 +112,7 @@ impl CacheStorage for SledEngine {
                             self.inner
                                 .open_tree(c.name())
                                 .map_err(|e| CacheError::Engine(e.to_string()))?
-                                .remove(key_bytes)
+                                .remove(key)
                                 .expect("Failed to remove outdated cache item");
 
                             return Ok(None);

@@ -64,23 +64,22 @@ jobs:
         id: lock-hash
         uses: seepine/hash-files@v1
         with:
-          workdir: ${{ matrix.working-directory }}/graph
           patterns: "**/Cargo.toml"
 
       - name: cache dependencies
         id: cache-dependencies
         uses: actions/cache@v4
         with:
-          key: ${{ matrix.working-directory }}-cargo-${{ steps.lock-hash.outputs.hash }}
+          key: cargo-${{ steps.lock-hash.outputs.hash }}
           path: |
-            ${{ matrix.working-directory }}/.cargo/bin
-            ${{ matrix.working-directory }}/.cargo/registry/
-            ${{ matrix.working-directory }}/.cargo/git/
-            ${{ matrix.working-directory }}/target/debug
+            /.cargo/bin
+            /.cargo/registry/
+            /.cargo/git/
+            /target/debug
 
       - name: fmt
         id: fmt
-        run: cargo fmt -p ${{ matrix.working-directory }} -- --check
+        run: cargo fmt -- --check
 
       - name: clippy
         id: clippy

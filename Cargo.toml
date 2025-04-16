@@ -10,7 +10,7 @@ readme = "./README.md"
 repository = "https://github.com/ashmarchington/omega-cache"
 
 [dependencies]
-bincode = { git = "https://github.com/bincode-org/bincode", tag = "v2.0.0-rc.3", features = ["derive"]}
+bincode = "2.0.1"
 sled = { version = "0.34.7", features = ["compression"], optional = true }
 redis = { version = "0.29.5", features = ["r2d2"], optional = true }
 r2d2 = { version = "0.8.10", optional = true }

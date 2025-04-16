@@ -5,6 +5,7 @@ use crate::{CacheError, CacheStorage};
 ///
 /// Wrapper for [`r2d2::Pool<redis::Client>`]
 ///
+#[derive(Debug)]
 pub struct RedisEngine {
     inner: r2d2::Pool<redis::Client>,
 }
@@ -26,15 +27,15 @@ impl CacheStorage for RedisEngine {
     fn try_insert(
         &self,
         c: &dyn crate::ColumnDefinition,
-        key: Vec<u8>,
-        value: Vec<u8>,
+        key: &[u8],
+        value: &[u8],
     ) -> Result<(), crate::CacheError> {
         match self.inner.get() {
             Ok(mut conn) => {
                 let t = std::time::Instant::now();
 
-                let k = [c.name().as_bytes(), ":".as_bytes(), &key].concat();
-                if let Err(e) = conn.set_options::<&[u8], Vec<u8>, ()>(
+                let k = [c.name().as_bytes(), ":".as_bytes(), key].concat();
+                if let Err(e) = conn.set_options::<&[u8], &[u8], ()>(
                     &k,
                     value,
                     SetOptions::default().with_expiration(SetExpiry::EX(
@@ -60,12 +61,12 @@ impl CacheStorage for RedisEngine {
     fn try_get(
         &self,
         c: &dyn crate::ColumnDefinition,
-        key: Vec<u8>,
+        key: &[u8],
     ) -> Result<Option<Vec<u8>>, crate::CacheError> {
         match self.inner.get() {
             Ok(mut conn) => {
                 let t = std::time::Instant::now();
-                let k = [c.name().as_bytes(), ":".as_bytes(), &key].concat();
+                let k = [c.name().as_bytes(), ":".as_bytes(), key].concat();
 
                 match conn.get::<&[u8], Vec<u8>>(&k) {
                     Ok(bytes) => {
